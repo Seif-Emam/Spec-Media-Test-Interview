@@ -1,0 +1,78 @@
+@TestIjnterview_HostAddress = http://localhost:5217
+
+### ===================================================
+### 1. PRODUCT CATALOG
+### ===================================================
+
+### 1.1 List All Seeded Products & Live Stock
+GET {{TestIjnterview_HostAddress}}/api/v1/products
+Accept: application/json
+
+
+### ===================================================
+### 2. LIST ALL ORDERS
+### ===================================================
+
+### 2.1 Get All Seeded & Placed Orders
+GET {{TestIjnterview_HostAddress}}/api/v1/orders
+Accept: application/json
+
+
+### ===================================================
+### 3. GET ORDER BY SPECIFIC SEEDED IDs
+### ===================================================
+
+### 3.1 Order 1: Audio Set ($149.97)
+GET {{TestIjnterview_HostAddress}}/api/v1/orders/3fa85f64-5717-4562-b3fc-2c963f66afa6
+Accept: application/json
+
+### 3.2 Order 2: Developer Workstation ($629.97)
+GET {{TestIjnterview_HostAddress}}/api/v1/orders/4fa85f64-5717-4562-b3fc-2c963f66afa7
+Accept: application/json
+
+### 3.3 Order 3: Ergonomic Setup ($309.49)
+GET {{TestIjnterview_HostAddress}}/api/v1/orders/5fa85f64-5717-4562-b3fc-2c963f66afa8
+Accept: application/json
+
+### 3.4 Order 4: Accessories Pack ($179.96)
+GET {{TestIjnterview_HostAddress}}/api/v1/orders/6fa85f64-5717-4562-b3fc-2c963f66afa9
+Accept: application/json
+
+
+### ===================================================
+### 4. CREATE NEW ORDER
+### ===================================================
+
+### 4.1 Process New Order (Success)
+POST {{TestIjnterview_HostAddress}}/api/v1/orders
+Content-Type: application/json
+Accept: application/json
+
+{
+  "currency": "USD",
+  "items": [
+    {
+      "productId": "8da85f64-5717-4562-b3fc-2c963f66afa2",
+      "quantity": 1
+    },
+    {
+      "productId": "cfa85f64-5717-4562-b3fc-2c963f66afa6",
+      "quantity": 2
+    }
+  ]
+}
+
+### 4.2 Process Order Validation Failure (Quantity <= 0)
+POST {{TestIjnterview_HostAddress}}/api/v1/orders
+Content-Type: application/json
+Accept: application/json
+
+{
+  "currency": "USD",
+  "items": [
+    {
+      "productId": "7ca85f64-5717-4562-b3fc-2c963f66afa1",
+      "quantity": 0
+    }
+  ]
+}

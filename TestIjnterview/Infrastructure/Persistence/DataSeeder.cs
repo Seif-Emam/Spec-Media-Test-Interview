@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using TestIjnterview.Domain.Entities;
 using TestIjnterview.Domain.Repositories;
 
@@ -8,8 +9,23 @@ public static class DataSeeder
     public static async Task SeedInitialDataAsync(IServiceProvider serviceProvider)
     {
         using var scope = serviceProvider.CreateScope();
+        var context = scope.ServiceProvider.GetService<AppDbContext>();
+
+        // If using EF Core DbContext, ensure schema is created
+        if (context != null)
+        {
+            await context.Database.EnsureCreatedAsync();
+        }
+
         var productRepo = scope.ServiceProvider.GetRequiredService<IProductRepository>();
         var orderRepo = scope.ServiceProvider.GetRequiredService<IOrderRepository>();
+
+        // Check if catalog is already seeded to prevent duplicates
+        var existingProducts = await productRepo.GetAllAsync();
+        if (existingProducts.Any())
+        {
+            return;
+        }
 
         // 1. Seed Products Catalog
         var headphones = new Product(

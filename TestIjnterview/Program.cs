@@ -1,5 +1,6 @@
 using FluentValidation;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using TestIjnterview.Common.Behaviors;
 using TestIjnterview.Common.Middleware;
 using TestIjnterview.Domain.Repositories;
@@ -21,7 +22,23 @@ public class Program
         builder.Services.AddProblemDetails();
         builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
-        // 2. MediatR Pipeline & CQRS Handlers
+        // 2. Database & Persistence (SQL Server EF Core)
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+        builder.Services.AddDbContext<AppDbContext>(options =>
+        {
+            options.UseSqlServer(connectionString, sqlOptions =>
+            {
+                sqlOptions.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(10),
+                    errorNumbersToAdd: null);
+            });
+        });
+
+        builder.Services.AddScoped<IProductRepository, EfProductRepository>();
+        builder.Services.AddScoped<IOrderRepository, EfOrderRepository>();
+
+        // 3. MediatR Pipeline & CQRS Handlers
         builder.Services.AddMediatR(cfg =>
         {
             cfg.RegisterServicesFromAssembly(typeof(Program).Assembly);
@@ -29,12 +46,8 @@ public class Program
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
 
-        // 3. FluentValidation Validators
+        // 4. FluentValidation Validators
         builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
-
-        // 4. Persistence / Repositories
-        builder.Services.AddSingleton<IProductRepository, InMemoryProductRepository>();
-        builder.Services.AddSingleton<IOrderRepository, InMemoryOrderRepository>();
 
         // 5. OpenAPI / Swagger Documentation
         builder.Services.AddEndpointsApiExplorer();
@@ -44,14 +57,22 @@ public class Program
             {
                 Title = "Enterprise Order & Product Processing API",
                 Version = "v1",
-                Description = "High-performance CQRS API with MediatR, Vertical Slice Architecture, and Seeded Catalog"
+                Description = "High-performance CQRS API with MediatR, EF Core SQL Server, and Seeded Catalog"
             });
         });
 
         var app = builder.Build();
 
-        // 6. Seed Initial Data (Catalog & Sample Orders)
-        await DataSeeder.SeedInitialDataAsync(app.Services);
+        // 6. Seed Initial Data (Schema Creation & Seeding)
+        try
+        {
+            await DataSeeder.SeedInitialDataAsync(app.Services);
+        }
+        catch (Exception ex)
+        {
+            var logger = app.Services.GetRequiredService<ILogger<Program>>();
+            logger.LogWarning(ex, "Could not run automated database seeder during startup. Ensure database server is accessible.");
+        }
 
         // 7. Global Exception Middleware
         app.UseExceptionHandler();
